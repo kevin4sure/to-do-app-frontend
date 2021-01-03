@@ -1,0 +1,8 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "projectId": "v366os",
+  "env": {
+    "resolution_width": 1600,
+    "resolution_height": 900
+  }
+}

@@ -9,7 +9,7 @@ import { TextInput } from "../../components/FormInput";
 import StyledCard from '../../components/Card';
 import useStyles from "./style";
 
-const Task = props => {
+const Bucket = props => {
   const { theme } = props;
   const [ bucketList ] = useState([ 1,2,3,4 ]);
   const [ showAddBucket, setShowAddBucket ] = useState(false);
@@ -64,8 +64,8 @@ const Task = props => {
       <Grid item xs={12}>
         <Grid container justify="flex-start" spacing={2}>
           {bucketList.length 
-            ? bucketList.map(() => (
-              <Grid item xs={12} sm={9} md={6} lg={4}>
+            ? bucketList.map((each,idx) => (
+              <Grid item key={`bucket-item-${idx.toString()}`}  xs={12} sm={9} md={6} lg={4}>
                 <Link to={`/bucket/${1}/tasks`} style={{ textDecoration: 'none' }}>
                   <StyledCard>
                     <Typography className={classes.label}>Personal</Typography>
@@ -86,8 +86,8 @@ const Task = props => {
   );
 };
 
-Task.propTypes = {
+Bucket.propTypes = {
   theme: PropTypes.objectOf(PropTypes.any).isRequired,
 };
 
-export default withTheme(Task);
+export default withTheme(Bucket);

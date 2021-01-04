@@ -9,10 +9,6 @@ const useStyles = colors => makeStyles(theme => ({
   body: {
     color: colors.placeholderFont
   },
-  label: {
-    color: colors.bodyFont,
-    textAlign: 'center',
-  },
   primaryButton:{
     backgroundColor: colors.buttonPrimary,
     color: colors.headingFont,
@@ -30,6 +26,16 @@ const useStyles = colors => makeStyles(theme => ({
     backgroundColor: colors.tilePrimary,
     marginBottom: theme.spacing(2),
     marginTop: theme.spacing(1),
+  },
+  label: {
+    color: colors.bodyFont
+  },
+  strike: {
+    textDecorationLine: "line-through",
+    color: colors.placeholderFont
+  },
+  danger: {
+    color: `rgb(${colors.palette.red})`,
   }
 }));
 

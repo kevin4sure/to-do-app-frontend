@@ -1,5 +1,5 @@
 
-import { createStore, applyMiddleware } from 'redux';
+import { createStore, compose, applyMiddleware } from 'redux';
 import thunk from 'redux-thunk';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
@@ -11,14 +11,14 @@ const persistConfig = {
   whitelist: [ 'selectedTheme' ] 
 };
  
+// eslint-disable-next-line no-underscore-dangle
+const composeEnhancer = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
 const pReducer = persistReducer(persistConfig, rootReducer);
- 
-// const reduxDevTools = window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__();
  
 export const store = createStore(
   pReducer,
-  applyMiddleware(thunk),
-  // reduxDevTools
+  composeEnhancer(applyMiddleware(thunk)),
 );
 export const persistor = persistStore(store);
  

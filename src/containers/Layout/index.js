@@ -26,7 +26,7 @@ const LayoutPage = props => {
             <Grid container spacing={2}>
               <Switch>
                 <Route path="/" component={() => <Dashboard />} exact />
-                <Route path="/bucket/:bucket_id/tasks" component={() => <Task />} exact />
+                <Route path="/bucket/:bucketId/tasks" component={() => <Task />} exact />
                 <Route component={() => <PageNotFound />} />
               </Switch>
             </Grid>

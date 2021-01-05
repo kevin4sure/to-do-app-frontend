@@ -1,48 +1,30 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import { withTheme } from 'styled-components';
-import { Button, Divider, Grid, Typography, FormControlLabel, Checkbox, IconButton } from '@material-ui/core';
-import { Edit, Delete } from '@material-ui/icons';
+import { Button, Divider, Grid, Typography, FormControlLabel, Checkbox, IconButton, CircularProgress } from '@material-ui/core';
+import { Edit, Delete, SentimentVeryDissatisfied } from '@material-ui/icons';
 import { green } from '@material-ui/core/colors';
 import { withStyles } from '@material-ui/core/styles';
 import { withRouter } from 'react-router-dom';
+import { connect } from 'react-redux';
+import { compose } from 'redux';
 
+import { bucketDetailFetchData } from "../Bucket/actions";
+import { tasksUnderBucketFetchData } from './actions';
 import { Prompt } from '../../components/MessagePrompt';
 import { TextInput } from '../../components/FormInput';
 import StyledCard from '../../components/Card';
 import useStyles from './style';
 
-const data = [
-  {
-    id: 1,
-    is_done: false,
-    title: "Meeting at 8pm tonight"
-  },
-  {
-    id: 2,
-    is_done: true,
-    title: "catchup call with team 8"
-  },
-  {
-    id: 3,
-    is_done: false,
-    title: "catchup call with team 5"
-  },
-  {
-    id: 4,
-    is_done: false,
-    title: "dinner with PM"
-  }      
-];
-
 const Task = props => {
-  const { theme } = props;
-  const [ taskList, setTaskList ] = useState(data);
+  const { theme, match, selectedBucket, getBucketDetail, tasksUnderBucket, getTasksUnderBucket } = props;
+  const [ taskList, setTaskList ] = useState([]);
   const [ showAddTask, setShowAddTask ] = useState(false);
   const [ newTaskName, setNewTaskName ] = useState('');
   
+  const { params } = match;
   const classes = useStyles(theme)();
 
   const GreenCheckbox = withStyles({
@@ -79,82 +61,114 @@ const Task = props => {
     setTaskList(tmp);
   };
 
+  useEffect(() => {
+    getBucketDetail(params.bucketId);
+    getTasksUnderBucket(params.bucketId);
+  }, [ getBucketDetail, getTasksUnderBucket, params ]);
+
+  useEffect(() => {
+    if (tasksUnderBucket?.data) {
+      setTaskList(tasksUnderBucket.data);
+    }
+  }, [ tasksUnderBucket ]);
+
+  if (!selectedBucket) {
+    return null;
+  }
+
   return (
     <Grid container justify="center">
       <Grid item sm={12} md={6}>
-        <Grid container>
-          <Grid item xs={12}>
-            <Grid container justify="space-between" alignItems="center">
-              <Grid item>
-                <Typography className={classes.header}>{"{BucketName}: task list"}</Typography>
-              </Grid>
-              <Grid item>
-                <Button onClick={showTaskDialog} className={classes.primaryButton}>add task</Button>
-                <Prompt 
-                  show={showAddTask} 
-                  size="sm" 
-                  onClose={hideTaskDialog}
-                  title="Add new task" 
-                  message={
-                    <TextInput 
-                      name="task_name"
-                      label="Task Name"
-                      value={newTaskName}
-                      onChange={handleTaskNameChange}
-                    />
-                  } 
-                  buttons={[ 
-                    { label: 'Cancel', action: hideTaskDialog, type: "secondary" }, 
-                    { label: 'Submit', action: hideTaskDialog, type: "primary", disable: false } 
-                  ]} 
-                />
-              </Grid>
-            </Grid>
-            <Divider className={classes.divider}  />
+        {selectedBucket?.error && (
+          <Grid container justify="center" alignItems="center">
+            <SentimentVeryDissatisfied className={classes.body} />
+            <Typography className={classes.body}>{selectedBucket?.error}</Typography>
           </Grid>
-          <Grid item xs={12}>
-            <Grid container justify="flex-start" alignItems="flex-start" spacing={2}>
-              {taskList.length 
-                ? taskList.map(each => (
-                  <Grid key={`task-list-${each.id}`} item xs={12}>
-                    <StyledCard>
-                      <Grid container justify="space-between">
-                        <Grid item>
-                          <FormControlLabel
-                            control={<GreenCheckbox checked={each.is_done} onChange={handleTaskStatusChange} name={`task-${each.id}`} />}
-                            label={<Typography className={clsx(classes.label, { [classes.strike]: each.is_done })}>{each.title}</Typography>}
-                          />
-                        </Grid>
-                        <Grid item>
-                          <Grid container>
-                            <Grid item>
-                              <IconButton className={classes.label}>
-                                <Edit className={classes.label}/>
-                              </IconButton>
-                            </Grid>
-                            <Grid item>
-                              <IconButton className={classes.danger}>
-                                <Delete className={classes.danger}/>
-                              </IconButton>
+        )}
+        {selectedBucket?.loading && (
+          <Grid container justify="center" alignItems="center">
+            <CircularProgress />
+          </Grid>
+        )}
+        {selectedBucket?.data && (
+          <Grid container>
+            <Grid item xs={12}>
+              <Grid container justify="space-between" alignItems="center">
+                <Grid item>
+                  <Typography className={classes.header}>{selectedBucket?.data && `${selectedBucket?.data?.name || ""} : Task List`}</Typography>
+                </Grid>
+                <Grid item>
+                  <Button onClick={showTaskDialog} className={classes.primaryButton}>add task</Button>
+                  <Prompt 
+                    show={showAddTask} 
+                    size="sm" 
+                    onClose={hideTaskDialog}
+                    title="Add new task" 
+                    message={
+                      <TextInput 
+                        name="task_name"
+                        label="Task Name"
+                        value={newTaskName}
+                        onChange={handleTaskNameChange}
+                      />
+                    } 
+                    buttons={[ 
+                      { label: 'Cancel', action: hideTaskDialog, type: "secondary" }, 
+                      { label: 'Submit', action: hideTaskDialog, type: "primary", disable: false } 
+                    ]} 
+                  />
+                </Grid>
+              </Grid>
+              <Divider className={classes.divider}  />
+            </Grid>
+            <Grid item xs={12}>
+              <Grid container justify="flex-start" alignItems="flex-start" spacing={2}>
+                {tasksUnderBucket?.loading && (
+                  <Grid container justify="center" alignItems="center">
+                    <CircularProgress />
+                  </Grid>
+                )}
+                {taskList.length 
+                  ? taskList.map(each => (
+                    <Grid key={`task-list-${each.id}`} item xs={12}>
+                      <StyledCard>
+                        <Grid container justify="space-between">
+                          <Grid item>
+                            <FormControlLabel
+                              control={<GreenCheckbox checked={each.is_done} onChange={handleTaskStatusChange} name={`task-${each.id}`} />}
+                              label={<Typography className={clsx(classes.label, { [classes.strike]: each.is_done })}>{each.title}</Typography>}
+                            />
+                          </Grid>
+                          <Grid item>
+                            <Grid container>
+                              <Grid item>
+                                <IconButton className={classes.label}>
+                                  <Edit className={classes.label}/>
+                                </IconButton>
+                              </Grid>
+                              <Grid item>
+                                <IconButton className={classes.danger}>
+                                  <Delete className={classes.danger}/>
+                                </IconButton>
+                              </Grid>
                             </Grid>
                           </Grid>
                         </Grid>
-                      </Grid>
                       
-                    </StyledCard>
-                  </Grid>
-                )) : (
-                  <Grid item>
-                    <Typography className={classes.body}>
-                  Sorry! there are no tasks to display, 
-                  you can add new task from the above &quot;ADD TASK&quot; button
-                    </Typography>
-                  </Grid>
-                )}
+                      </StyledCard>
+                    </Grid>
+                  )) : (
+                    <Grid item>
+                      <Typography className={classes.body}>
+                        Sorry! there are no tasks to display, 
+                        you can add new task from the above &quot;ADD TASK&quot; button
+                      </Typography>
+                    </Grid>
+                  )}
+              </Grid>
             </Grid>
           </Grid>
-        </Grid>
-
+        )}
       </Grid>
     </Grid>
   );
@@ -162,6 +176,32 @@ const Task = props => {
 
 Task.propTypes = {
   theme: PropTypes.objectOf(PropTypes.any).isRequired,
+  match: PropTypes.objectOf(PropTypes.any).isRequired,
+  getBucketDetail: PropTypes.func,
+  selectedBucket: PropTypes.objectOf(PropTypes.any),
+  getTasksUnderBucket: PropTypes.func,
+  tasksUnderBucket: PropTypes.objectOf(PropTypes.any)
 };
 
-export default withTheme(withRouter(Task));
+Task.defaultProps = {
+  selectedBucket:  null,
+  getBucketDetail: () => null,
+  tasksUnderBucket: null,
+  getTasksUnderBucket: () => null
+};
+
+const mapStateToProps = state => {
+  return {
+    selectedBucket: state.selectedBucket,
+    tasksUnderBucket: state.tasksUnderBucket
+  };
+};
+
+const mapDispatchToProps = dispatch => {
+  return {
+    getBucketDetail: id => dispatch(bucketDetailFetchData(id)),
+    getTasksUnderBucket: id => dispatch(tasksUnderBucketFetchData(id))
+  };
+};
+
+export default compose(connect(mapStateToProps, mapDispatchToProps))(withTheme(withRouter(Task)));

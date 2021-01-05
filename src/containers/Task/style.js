@@ -4,7 +4,8 @@ const useStyles = colors => makeStyles(theme => ({
   header: {
     fontSize: colors.font.large*2,
     fontWeight: 600,
-    color: colors.bodyFont
+    color: colors.bodyFont,
+    textTransform: "capitalize"
   },
   body: {
     color: colors.placeholderFont
@@ -36,7 +37,7 @@ const useStyles = colors => makeStyles(theme => ({
   },
   danger: {
     color: `rgb(${colors.palette.red})`,
-  }
+  },
 }));
 
 export default useStyles;

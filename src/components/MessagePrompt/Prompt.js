@@ -1,7 +1,6 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import clsx from 'clsx';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button, Grid } from "@material-ui/core";
 import { withTheme } from "styled-components";
 
@@ -48,15 +47,15 @@ const Prompt = props => {
       fullWidth
       id={id}
     >
-      <DialogTitle disableTypography className={classes.root} onClose={handleClose} id="closeIcon">
+      <DialogTitle disableTypography  onClose={handleClose} id="closeIcon">
         <Grid container direction='row'>
-          <Typography className={classes.heading}>{title}</Typography>
+          <Typography style={{ fontSize: theme.font.extraLarge }}>{title}</Typography>
         </Grid>
       </DialogTitle>
-      <DialogContent className={clsx(classes.dialogContentRunWorkLoad, classes.dialogWorkLoad)}>
+      <DialogContent >
         {message}
       </DialogContent>
-      <DialogActions className={clsx(classes.dialogContentRunWorkLoad, classes.footerBackground)}>
+      <DialogActions >
         {buttons && buttons.map(each => (
           <Button disabled={each.disable} id={`__${each.label.toLowerCase().split(' ').join('-')}`} key={each.label} onClick={each.action} variant="text" color={each.type} className={each.type === "primary" ? classes.primaryButtonSubmit : classes.secondaryButtonCancel}>
             {each.label}

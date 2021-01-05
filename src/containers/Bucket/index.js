@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Grid, Typography, Button, Divider, CircularProgress } from '@material-ui/core';
+import { Grid, Typography, Button, Divider, CircularProgress, TextField } from '@material-ui/core';
 import { withTheme } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 
+import { Autocomplete } from '@material-ui/lab';
 import { Prompt } from "../../components/MessagePrompt";
-import { TextInput } from "../../components/FormInput";
 import StyledCard from '../../components/Card';
 import { MessageContext } from '../../context/MessageContext';
 import { bucketsFetchData, createBucketAction } from './actions';
@@ -31,22 +31,29 @@ const Bucket = props => {
   };
 
   const handleBucketNameChange = value => {
-    setNewBucketName(value);
+    if (value) {
+      setNewBucketName(value);
+    }
   };
 
   const handleCreateBucketSubmit = useCallback(() => {
     if (newBucketName) {
       const data = { name: newBucketName };
       createBucket(data)
-        .then(response => {
-          showAlert('success', response.msg);
+        .then(res => {
+          showAlert('success', res.msg);
           fetchData();
           hideBucketDialog();
+        })
+        .catch(err => {
+          Object.values(err.response.data.error).forEach(each => {
+            showAlert('error', each.join(' '));
+          });
         });
     }else {
       showAlert('error', "Bucket name is not valid.");
     }
-  }, [ createBucket, newBucketName ]);
+  }, [ createBucket, newBucketName,fetchData, showAlert ]);
 
   useEffect(() => {
     fetchData();
@@ -67,12 +74,22 @@ const Bucket = props => {
               onClose={hideBucketDialog}
               title="Create new bucket" 
               message={
-                <TextInput 
-                  name="bucket_name"
-                  label="Bucket Name"
-                  value={newBucketName}
-                  onChange={handleBucketNameChange}
+                <Autocomplete
+                  id="combo-box-demo"
+                  freeSolo
+                  options={buckets}
+                  onChange={(e, newValue) => handleBucketNameChange(newValue?.name)}
+                  renderOption={option => option.name}
+                  getOptionLabel={option => option.name}
+                  style={{ width: 200 }}
+                  renderInput={txtProps => <TextField style={{ color: 'white' }} {...txtProps} value={newBucketName} name="bucket_name" label="Bucket Name" variant="outlined" />}
                 />
+                // <TextInput 
+                //   name="bucket_name"
+                //   label="Bucket Name"
+                //   value={newBucketName}
+                //   onChange={handleBucketNameChange}
+                // />
               } 
               buttons={[ 
                 { label: 'Cancel', action: hideBucketDialog, type: "secondary" }, 

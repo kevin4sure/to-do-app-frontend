@@ -113,7 +113,7 @@ export const createBucketAction = data => {
   return dispatch => {
     dispatch(createBucketLoading(true));
 
-    return axios.post(`http://localhost:8000/buckets`, { ...data })
+    const promise = new Promise((resolve,reject) => axios.post(`http://localhost:8000/buckets`, { ...data })
       .then(response => {
         dispatch(createBucketLoading(false));
         return response;
@@ -121,7 +121,7 @@ export const createBucketAction = data => {
       .then(response => response.data)
       .then(items => {
         dispatch(createBucketSuccess(items));
-        return items; 
+        resolve(items);
       })
       .catch(e => {
         if (e.response.status === 406) {
@@ -131,7 +131,9 @@ export const createBucketAction = data => {
         } else {
           dispatch(createBucketError(true));
         }
-      });
+        reject(e);
+      }));
+    return promise;  
   };
 };
 

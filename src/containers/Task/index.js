@@ -1,31 +1,34 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import { withTheme } from 'styled-components';
-import { Button, Divider, Grid, Typography, FormControlLabel, Checkbox, IconButton, CircularProgress } from '@material-ui/core';
+import { Button, Divider, Grid, Typography, FormControlLabel, Checkbox, IconButton, CircularProgress, TextField } from '@material-ui/core';
 import { Edit, Delete, SentimentVeryDissatisfied } from '@material-ui/icons';
 import { green } from '@material-ui/core/colors';
+import { Autocomplete } from '@material-ui/lab';
 import { withStyles } from '@material-ui/core/styles';
 import { withRouter } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 
-import { bucketDetailFetchData } from "../Bucket/actions";
-import { tasksUnderBucketFetchData } from './actions';
+import { bucketDetailFetchData, bucketsFetchData } from "../Bucket/actions";
+import { tasksUnderBucketFetchData, createTaskAction } from './actions';
+import { MessageContext } from '../../context/MessageContext';
 import { Prompt } from '../../components/MessagePrompt';
-import { TextInput } from '../../components/FormInput';
 import StyledCard from '../../components/Card';
 import useStyles from './style';
 
 const Task = props => {
-  const { theme, match, selectedBucket, getBucketDetail, tasksUnderBucket, getTasksUnderBucket } = props;
+  const { theme, match, selectedBucket, getBucketDetail, tasksUnderBucket, getTasksUnderBucket, allBuckets, getAllBuckets, createTask } = props;
   const [ taskList, setTaskList ] = useState([]);
   const [ showAddTask, setShowAddTask ] = useState(false);
   const [ newTaskName, setNewTaskName ] = useState('');
+  const [ bucket, setBucket ] = useState('');
   
   const { params } = match;
   const classes = useStyles(theme)();
+  const { showAlert } = useContext(MessageContext);
 
   const GreenCheckbox = withStyles({
     root: {
@@ -38,6 +41,9 @@ const Task = props => {
   })(checkboxProps => <Checkbox color="default" {...checkboxProps} />);
 
   const showTaskDialog = () => {
+    if (!allBuckets.length) {
+      getAllBuckets();
+    }
     setNewTaskName('');
     setShowAddTask(true);
   };
@@ -61,6 +67,20 @@ const Task = props => {
     setTaskList(tmp);
   };
 
+  const handleNewTaskSubmit = useCallback(() => {
+    createTask({ bucket_id: bucket.id, title: newTaskName })
+      .then(res => {
+        showAlert('success', res.msg);
+        hideTaskDialog();
+      })
+      .catch(error => {
+        Object.values(error.response.data.error).forEach(each => {
+          showAlert('error', each.join(' '));
+        });        
+      });
+
+  }, [ createTask, bucket, newTaskName, showAlert ]);
+
   useEffect(() => {
     getBucketDetail(params.bucketId);
     getTasksUnderBucket(params.bucketId);
@@ -71,10 +91,6 @@ const Task = props => {
       setTaskList(tasksUnderBucket.data);
     }
   }, [ tasksUnderBucket ]);
-
-  if (!selectedBucket) {
-    return null;
-  }
 
   return (
     <Grid container justify="center">
@@ -105,16 +121,28 @@ const Task = props => {
                     onClose={hideTaskDialog}
                     title="Add new task" 
                     message={
-                      <TextInput 
-                        name="task_name"
-                        label="Task Name"
-                        value={newTaskName}
-                        onChange={handleTaskNameChange}
-                      />
+                      <Grid container justify="center" spacing={2}>
+                        <Grid item><Autocomplete
+                          options={allBuckets}
+                          onChange={(e, newValue) => setBucket(newValue)}
+                          renderOption={option => option.name}
+                          getOptionLabel={option => option.name}
+                          style={{ width: 200 }}
+                          renderInput={txtProps => <TextField {...txtProps} value={bucket?.name} name="bucket_name" label="Bucket Name" variant="outlined" />}
+                        /></Grid>
+                        <Grid item><TextField 
+                          name="task_name"
+                          label="Task Name"
+                          value={newTaskName}
+                          onChange={e => handleTaskNameChange(e.target.value)}
+                          variant="outlined"
+                        /></Grid>
+
+                      </Grid>
                     } 
                     buttons={[ 
                       { label: 'Cancel', action: hideTaskDialog, type: "secondary" }, 
-                      { label: 'Submit', action: hideTaskDialog, type: "primary", disable: false } 
+                      { label: 'Submit', action: handleNewTaskSubmit, type: "primary", disable: false } 
                     ]} 
                   />
                 </Grid>
@@ -180,27 +208,36 @@ Task.propTypes = {
   getBucketDetail: PropTypes.func,
   selectedBucket: PropTypes.objectOf(PropTypes.any),
   getTasksUnderBucket: PropTypes.func,
-  tasksUnderBucket: PropTypes.objectOf(PropTypes.any)
+  tasksUnderBucket: PropTypes.objectOf(PropTypes.any),
+  allBuckets: PropTypes.arrayOf(PropTypes.object),
+  getAllBuckets: PropTypes.func,
+  createTask: PropTypes.func,
 };
 
 Task.defaultProps = {
   selectedBucket:  null,
   getBucketDetail: () => null,
   tasksUnderBucket: null,
-  getTasksUnderBucket: () => null
+  getTasksUnderBucket: () => null,
+  allBuckets: [],
+  getAllBuckets: () => null,
+  createTask: () => null
 };
 
 const mapStateToProps = state => {
   return {
     selectedBucket: state.selectedBucket,
-    tasksUnderBucket: state.tasksUnderBucket
+    tasksUnderBucket: state.tasksUnderBucket,
+    allBuckets: state.buckets
   };
 };
 
 const mapDispatchToProps = dispatch => {
   return {
     getBucketDetail: id => dispatch(bucketDetailFetchData(id)),
-    getTasksUnderBucket: id => dispatch(tasksUnderBucketFetchData(id))
+    getTasksUnderBucket: id => dispatch(tasksUnderBucketFetchData(id)),
+    getAllBuckets: () => dispatch(bucketsFetchData()),
+    createTask: data => dispatch(createTaskAction(data))
   };
 };
 

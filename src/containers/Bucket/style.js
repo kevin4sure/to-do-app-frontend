@@ -12,6 +12,7 @@ const useStyles = colors => makeStyles(theme => ({
   label: {
     color: colors.bodyFont,
     textAlign: 'center',
+    textTransform: 'capitalize'
   },
   primaryButton:{
     backgroundColor: colors.buttonPrimary,

@@ -4,9 +4,10 @@ import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import { withTheme } from 'styled-components';
 import { Button, Divider, Grid, Typography, FormControlLabel, Checkbox, IconButton } from '@material-ui/core';
-import { withStyles } from '@material-ui/core/styles';
-import { green } from '@material-ui/core/colors';
 import { Edit, Delete } from '@material-ui/icons';
+import { green } from '@material-ui/core/colors';
+import { withStyles } from '@material-ui/core/styles';
+import { withRouter } from 'react-router-dom';
 
 import { Prompt } from '../../components/MessagePrompt';
 import { TextInput } from '../../components/FormInput';
@@ -41,7 +42,7 @@ const Task = props => {
   const [ taskList, setTaskList ] = useState(data);
   const [ showAddTask, setShowAddTask ] = useState(false);
   const [ newTaskName, setNewTaskName ] = useState('');
-
+  
   const classes = useStyles(theme)();
 
   const GreenCheckbox = withStyles({
@@ -163,4 +164,4 @@ Task.propTypes = {
   theme: PropTypes.objectOf(PropTypes.any).isRequired,
 };
 
-export default withTheme(Task);
+export default withTheme(withRouter(Task));

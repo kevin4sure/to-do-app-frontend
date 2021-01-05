@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Grid, Typography, Button, Divider } from '@material-ui/core';
+import { Grid, Typography, Button, Divider, CircularProgress } from '@material-ui/core';
 import { withTheme } from 'styled-components';
 import { Link } from 'react-router-dom';
+import { connect } from 'react-redux';
+import { compose } from 'redux';
 
 import { Prompt } from "../../components/MessagePrompt";
 import { TextInput } from "../../components/FormInput";
 import StyledCard from '../../components/Card';
+import { bucketsFetchData } from './actions';
 import useStyles from "./style";
 
 const Bucket = props => {
-  const { theme } = props;
-  const [ bucketList ] = useState([ 1,2,3,4 ]);
+  const { theme, buckets, hasErrored, isLoading, fetchData  } = props;
   const [ showAddBucket, setShowAddBucket ] = useState(false);
   const [ newBucketName, setNewBucketName ] = useState('');
 
@@ -29,6 +31,10 @@ const Bucket = props => {
   const handleBucketNameChange = value => {
     setNewBucketName(value);
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [ fetchData ]);
 
   return (
     <Grid container>
@@ -62,13 +68,25 @@ const Bucket = props => {
         <Divider className={classes.divider}  />
       </Grid>
       <Grid item xs={12}>
-        <Grid container justify="flex-start" spacing={2}>
-          {bucketList.length 
-            ? bucketList.map((each,idx) => (
+        <Grid container justify="flex-start" alignItems="center" spacing={2}>
+          {hasErrored && (
+            <Typography className={classes.body}>
+            Sorry! There was an error loading the bucket list.
+            </Typography>
+          )}
+          {isLoading && (
+            <Grid item xs={12}>
+              <Grid container justify="center">
+                <CircularProgress />
+              </Grid>
+            </Grid>
+          )}
+          {buckets.length 
+            ? buckets.map((each,idx) => (
               <Grid item key={`bucket-item-${idx.toString()}`}  xs={12} sm={9} md={6} lg={4}>
-                <Link to={`/bucket/${1}/tasks`} style={{ textDecoration: 'none' }}>
+                <Link to={`/bucket/${each.id}/tasks`} style={{ textDecoration: 'none' }}>
                   <StyledCard>
-                    <Typography className={classes.label}>Personal</Typography>
+                    <Typography className={classes.label}>{each.name}</Typography>
                   </StyledCard>
                 </Link>
               </Grid>
@@ -88,6 +106,30 @@ const Bucket = props => {
 
 Bucket.propTypes = {
   theme: PropTypes.objectOf(PropTypes.any).isRequired,
+  buckets: PropTypes.arrayOf(PropTypes.object),
+  hasErrored: PropTypes.bool, 
+  isLoading: PropTypes.bool, 
+  fetchData: PropTypes.func
 };
 
-export default withTheme(Bucket);
+Bucket.defaultProps = {
+  buckets: [],
+  hasErrored: false,
+  isLoading: false,
+  fetchData: () => null
+};
+
+const mapStateToProps = state => {
+  return {
+    buckets: state.buckets,
+    hasErrored: state.bucketsHasErrored,
+    isLoading: state.bucketsIsLoading
+  };
+};
+
+const mapDispatchToProps = dispatch => {
+  return {
+    fetchData: () => dispatch(bucketsFetchData())
+  };
+};
+export default compose(connect(mapStateToProps, mapDispatchToProps))(withTheme(Bucket));

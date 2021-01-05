@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { BUCKETS_ERROR,BUCKETS_LOADING,BUCKETS_SUCCESS, BUCKET_DETAIL_ERROR,BUCKET_DETAIL_LOADING, BUCKET_DETAIL_SUCCESS } from './types';
+import { BUCKETS_ERROR,BUCKETS_LOADING,BUCKETS_SUCCESS, BUCKET_DETAIL_ERROR,BUCKET_DETAIL_LOADING, BUCKET_DETAIL_SUCCESS, CREATE_BUCKET_LOADING,CREATE_BUCKET_SUCCESS,CREATE_BUCKET_ERROR } from './types';
 
 export const bucketsHasErrored = bool => {
   return {
@@ -23,23 +23,44 @@ export const bucketsFetchDataSuccess = items => {
   };
 };
 
-export const bucketDetailErrored = bool => {
+const bucketDetailErrored = bool => {
   return {
     type: BUCKET_DETAIL_ERROR,
     hasErrored: bool
   };
 };
 
-export const bucketDetailLoading = bool => {
+const bucketDetailLoading = bool => {
   return {
     type: BUCKET_DETAIL_LOADING,
     isLoading: bool
   };
 };
 
-export const bucketDetailSuccess = items => {
+const bucketDetailSuccess = items => {
   return {
     type: BUCKET_DETAIL_SUCCESS,
+    items
+  };
+};
+
+const createBucketError = bool => {
+  return {
+    type: CREATE_BUCKET_ERROR,
+    hasErrored: bool
+  };
+};
+
+const createBucketLoading = bool => {
+  return {
+    type: CREATE_BUCKET_LOADING,
+    isLoading: bool
+  };
+};
+
+const createBucketSuccess = items => {
+  return {
+    type: CREATE_BUCKET_SUCCESS,
     items
   };
 };
@@ -87,3 +108,30 @@ export const bucketDetailFetchData = bucketId => {
       });
   };
 };
+
+export const createBucketAction = data => {
+  return dispatch => {
+    dispatch(createBucketLoading(true));
+
+    return axios.post(`http://localhost:8000/buckets`, { ...data })
+      .then(response => {
+        dispatch(createBucketLoading(false));
+        return response;
+      })
+      .then(response => response.data)
+      .then(items => {
+        dispatch(createBucketSuccess(items));
+        return items; 
+      })
+      .catch(e => {
+        if (e.response.status === 406) {
+          dispatch(createBucketError(e.response.data));
+        } else if (e?.response?.data?.msg) {
+          dispatch(createBucketError(e.response.data.msg));
+        } else {
+          dispatch(createBucketError(true));
+        }
+      });
+  };
+};
+

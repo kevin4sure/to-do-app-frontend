@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Grid, Typography, Button, Divider, CircularProgress } from '@material-ui/core';
 import { withTheme } from 'styled-components';
@@ -9,15 +9,17 @@ import { compose } from 'redux';
 import { Prompt } from "../../components/MessagePrompt";
 import { TextInput } from "../../components/FormInput";
 import StyledCard from '../../components/Card';
-import { bucketsFetchData } from './actions';
+import { MessageContext } from '../../context/MessageContext';
+import { bucketsFetchData, createBucketAction } from './actions';
 import useStyles from "./style";
 
 const Bucket = props => {
-  const { theme, buckets, hasErrored, isLoading, fetchData  } = props;
+  const { theme, buckets, hasErrored, isLoading, fetchData, createBucket  } = props;
   const [ showAddBucket, setShowAddBucket ] = useState(false);
   const [ newBucketName, setNewBucketName ] = useState('');
 
   const classes = useStyles(theme)();
+  const { showAlert } = useContext(MessageContext);
 
   const showBucketDialog = () => {
     setNewBucketName('');
@@ -31,6 +33,20 @@ const Bucket = props => {
   const handleBucketNameChange = value => {
     setNewBucketName(value);
   };
+
+  const handleCreateBucketSubmit = useCallback(() => {
+    if (newBucketName) {
+      const data = { name: newBucketName };
+      createBucket(data)
+        .then(response => {
+          showAlert('success', response.msg);
+          fetchData();
+          hideBucketDialog();
+        });
+    }else {
+      showAlert('error', "Bucket name is not valid.");
+    }
+  }, [ createBucket, newBucketName ]);
 
   useEffect(() => {
     fetchData();
@@ -60,7 +76,7 @@ const Bucket = props => {
               } 
               buttons={[ 
                 { label: 'Cancel', action: hideBucketDialog, type: "secondary" }, 
-                { label: 'Submit', action: hideBucketDialog, type: "primary", disable: false } 
+                { label: 'Submit', action: handleCreateBucketSubmit, type: "primary", disable: false } 
               ]} 
             />
           </Grid>
@@ -109,14 +125,16 @@ Bucket.propTypes = {
   buckets: PropTypes.arrayOf(PropTypes.object),
   hasErrored: PropTypes.bool, 
   isLoading: PropTypes.bool, 
-  fetchData: PropTypes.func
+  fetchData: PropTypes.func,
+  createBucket: PropTypes.func
 };
 
 Bucket.defaultProps = {
   buckets: [],
   hasErrored: false,
   isLoading: false,
-  fetchData: () => null
+  fetchData: () => null,
+  createBucket: () => null
 };
 
 const mapStateToProps = state => {
@@ -129,7 +147,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    fetchData: () => dispatch(bucketsFetchData())
+    fetchData: () => dispatch(bucketsFetchData()),
+    createBucket: data => dispatch(createBucketAction(data))
   };
 };
 export default compose(connect(mapStateToProps, mapDispatchToProps))(withTheme(Bucket));

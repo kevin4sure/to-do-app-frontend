@@ -43,15 +43,18 @@ const Task = props => {
     checked: {},
   })(checkboxProps => <Checkbox color="default" {...checkboxProps} />);
 
-  const showTaskDialog = () => {
+  const showTaskDialog = useCallback(() => {
     setTaskActionType('create');
     if (!allBuckets.length) {
       getAllBuckets();
     }
     setNewTaskName('');
-    setBucket(null);
+    const tmpBucket = allBuckets.find(each => each.id === parseInt(params.bucketId,10));
+    if (tmpBucket) {
+      setBucket(tmpBucket);
+    }
     setShowAddTask(true);
-  };
+  }, [getAllBuckets, allBuckets, params]);
 
   const showEditTaskDialog = () => {
     setTaskActionType('edit');

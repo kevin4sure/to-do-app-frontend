@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { TASKS_ERROR,TASKS_LOADING,TASKS_SUCCESS, CREATE_TASKS_ERROR,CREATE_TASKS_LOADING,CREATE_TASKS_SUCCESS, UPDATE_TASK_ERROR,UPDATE_TASK_LOADING,UPDATE_TASK_SUCCESS } from "./types";
+import { TASKS_ERROR,TASKS_LOADING,TASKS_SUCCESS, CREATE_TASKS_ERROR,CREATE_TASKS_LOADING,CREATE_TASKS_SUCCESS, UPDATE_TASK_ERROR,UPDATE_TASK_LOADING,UPDATE_TASK_SUCCESS, DELETE_TASK_ERROR,DELETE_TASK_LOADING,DELETE_TASK_SUCCESS } from "./types";
 
 const tasksError = err => {
   return {
@@ -65,6 +65,27 @@ const updateTasksSuccess = items => {
   };
 };
 
+const deleteTasksError = err => {
+  return {
+    type: DELETE_TASK_ERROR,
+    hasErrored: err
+  };
+};
+    
+const deleteTasksLoading = bool => {
+  return {
+    type: DELETE_TASK_LOADING,
+    isLoading: bool
+  };
+};
+    
+const deleteTasksSuccess = items => {
+  return {
+    type: DELETE_TASK_SUCCESS,
+    items
+  };
+};
+
 export const tasksUnderBucketFetchData = id => {
   return dispatch => {
     dispatch(tasksLoading(true));
@@ -80,7 +101,7 @@ export const tasksUnderBucketFetchData = id => {
         resolve(items); 
       })
       .catch(e => {
-        if (e.response.status === 404) {
+        if (e?.response?.status === 404) {
           dispatch(tasksError("Tasks Not Found."));
         } else if (e?.response?.data?.msg) {
           dispatch(tasksError(e.response.data.msg));
@@ -140,6 +161,32 @@ export const updateTaskStatus = (id, data) => {
           dispatch(updateTasksError(e.response.data.msg));
         } else {
           dispatch(updateTasksError(true));
+        }
+        reject(e);
+      }));
+    return promise;
+  };
+};
+
+export const deleteTaskAction = id => {
+  return dispatch => {
+    const promise = new Promise((resolve, reject) => axios.delete(`http://localhost:8000/task/${id}`)
+      .then(response => {
+        dispatch(deleteTasksLoading(false));
+        return response;
+      })
+      .then(response => response.data)
+      .then(items => {
+        dispatch(deleteTasksSuccess(items));
+        resolve(items); 
+      })
+      .catch(e => {
+        if (e.response.status === 406) {
+          dispatch(deleteTasksError(e.response.data));
+        } else if (e?.response?.data?.msg) {
+          dispatch(deleteTasksError(e.response.data.msg));
+        } else {
+          dispatch(deleteTasksError(true));
         }
         reject(e);
       }));

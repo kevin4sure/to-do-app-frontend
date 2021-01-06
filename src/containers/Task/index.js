@@ -13,19 +13,22 @@ import { connect } from 'react-redux';
 import { compose } from 'redux';
 
 import { bucketDetailFetchData, bucketsFetchData } from "../Bucket/actions";
-import { tasksUnderBucketFetchData, createTaskAction, updateTaskStatus } from './actions';
+import { tasksUnderBucketFetchData, createTaskAction, updateTaskStatus, deleteTaskAction } from './actions';
 import { MessageContext } from '../../context/MessageContext';
 import { Prompt } from '../../components/MessagePrompt';
 import StyledCard from '../../components/Card';
 import useStyles from './style';
 
 const Task = props => {
-  const { theme, match, selectedBucket, getBucketDetail, tasksUnderBucket, getTasksUnderBucket, allBuckets, getAllBuckets, createTask, updateTask } = props;
+  const { theme, match, selectedBucket, getBucketDetail, tasksUnderBucket, getTasksUnderBucket, allBuckets, getAllBuckets, createTask, updateTask, deleteTask } = props;
   const [ taskList, setTaskList ] = useState([]);
   const [ showAddTask, setShowAddTask ] = useState(false);
   const [ newTaskName, setNewTaskName ] = useState('');
-  const [ bucket, setBucket ] = useState('');
-  
+  const [ bucket, setBucket ] = useState(null);
+  const [ taskActionType, setTaskActionType ] = useState('');
+  const [ selectedTask, setSelectedTask ] = useState(null);
+  const [ deleteTaskDialog, setDeleteTaskDialog ] = useState(false);
+
   const { params } = match;
   const classes = useStyles(theme)();
   const { showAlert } = useContext(MessageContext);
@@ -41,15 +44,35 @@ const Task = props => {
   })(checkboxProps => <Checkbox color="default" {...checkboxProps} />);
 
   const showTaskDialog = () => {
+    setTaskActionType('create');
     if (!allBuckets.length) {
       getAllBuckets();
     }
     setNewTaskName('');
+    setBucket(null);
+    setShowAddTask(true);
+  };
+
+  const showEditTaskDialog = () => {
+    setTaskActionType('edit');
+    if (!allBuckets.length) {
+      getAllBuckets();
+    }
     setShowAddTask(true);
   };
 
   const hideTaskDialog = () => {
     setShowAddTask(false);
+    setSelectedTask(null);
+  };
+
+  const showDeleteTaskDialog = () => {
+    setDeleteTaskDialog(true);
+  };
+
+  const hideDeleteTaskDialog = () => {
+    setDeleteTaskDialog(false);
+    setSelectedTask(null);
   };
 
   const handleTaskNameChange = value => {
@@ -94,6 +117,60 @@ const Task = props => {
 
   }, [ createTask, bucket, newTaskName, showAlert, getTasksUnderBucket, params ]);
 
+  const handleEditTaskSubmit = useCallback(() => {
+    const data = { bucket_id: bucket.id, title: newTaskName };
+    updateTask(selectedTask.id, data)
+      .then(res => {
+        showAlert("success", res.msg);
+        hideTaskDialog();
+        getTasksUnderBucket(params.bucketId);
+      })
+      .catch(error => {
+        Object.values(error.response.data.error).forEach(each => {
+          showAlert('error', each.join(' '));
+        }); 
+      });
+  }, [ updateTask ,selectedTask, bucket, newTaskName, showAlert, getTasksUnderBucket, params ]);
+
+  const handleEditTaskClick = task => {
+    showEditTaskDialog();
+    setSelectedTask(task);
+    setBucket(task.bucket);
+    setNewTaskName(task.title);
+  };
+
+  const switchTaskDialog = () => {
+    const type = taskActionType;
+    if (type === "edit") {
+      handleEditTaskSubmit();
+    } else if ( type === 'create') {
+      handleNewTaskSubmit();
+    }
+  };
+
+  const handleDeleteTaskClick = task => {
+    setSelectedTask(task);
+    showDeleteTaskDialog();
+  };
+
+  const deleteTaskSubmit = useCallback(() => {
+    if (selectedTask?.id) {
+      deleteTask(selectedTask.id)
+        .then(res => {
+          showAlert("success", res.msg);
+          hideDeleteTaskDialog();
+          getTasksUnderBucket(params.bucketId);
+        })
+        .catch(error => {
+          Object.values(error.response.data.error).forEach(each => {
+            showAlert('error', each.join(' '));
+          }); 
+        });
+    } else {
+      showAlert("error", 'no task selected');
+    }
+  }, [ selectedTask, deleteTask, showAlert, getTasksUnderBucket, params ]);
+
   useEffect(() => {
     getBucketDetail(params.bucketId);
     getTasksUnderBucket(params.bucketId);
@@ -132,11 +209,13 @@ const Task = props => {
                     show={showAddTask} 
                     size="sm" 
                     onClose={hideTaskDialog}
-                    title="Add new task" 
+                    title={taskActionType === "create" ? "Add New Task": "Edit Existing Task"} 
                     message={
                       <Grid container justify="center" spacing={2}>
                         <Grid item><Autocomplete
                           options={allBuckets}
+                          value={bucket}
+                          getOptionSelected={option => option.name}
                           onChange={(e, newValue) => setBucket(newValue)}
                           renderOption={option => option.name}
                           getOptionLabel={option => option.name}
@@ -155,7 +234,7 @@ const Task = props => {
                     } 
                     buttons={[ 
                       { label: 'Cancel', action: hideTaskDialog, type: "secondary" }, 
-                      { label: 'Submit', action: handleNewTaskSubmit, type: "primary", disable: false } 
+                      { label: 'Submit', action: switchTaskDialog, type: "primary", disable: false } 
                     ]} 
                   />
                 </Grid>
@@ -183,12 +262,12 @@ const Task = props => {
                           <Grid item>
                             <Grid container>
                               <Grid item>
-                                <IconButton className={classes.label}>
+                                <IconButton onClick={() => handleEditTaskClick(each)} className={classes.label}>
                                   <Edit className={classes.label}/>
                                 </IconButton>
                               </Grid>
                               <Grid item>
-                                <IconButton className={classes.danger}>
+                                <IconButton onClick={() => handleDeleteTaskClick(each)} className={classes.danger}>
                                   <Delete className={classes.danger}/>
                                 </IconButton>
                               </Grid>
@@ -211,6 +290,18 @@ const Task = props => {
           </Grid>
         )}
       </Grid>
+      {/* task delete modal */}
+      <Prompt 
+        show={deleteTaskDialog} 
+        size="sm" 
+        onClose={hideDeleteTaskDialog}
+        title="Confirm Task Delete"
+        message="Are you sure you want to delete this task?"
+        buttons={[ 
+          { label: 'Cancel', action: hideDeleteTaskDialog, type: "secondary" }, 
+          { label: 'Confirm', action: deleteTaskSubmit, type: "primary", disable: false } 
+        ]} 
+      />
     </Grid>
   );
 };
@@ -226,6 +317,7 @@ Task.propTypes = {
   getAllBuckets: PropTypes.func,
   createTask: PropTypes.func,
   updateTask: PropTypes.func,
+  deleteTask: PropTypes.func,
 };
 
 Task.defaultProps = {
@@ -237,6 +329,7 @@ Task.defaultProps = {
   getAllBuckets: () => null,
   createTask: () => null,
   updateTask: () => null,
+  deleteTask: () => null,
 };
 
 const mapStateToProps = state => {
@@ -254,6 +347,7 @@ const mapDispatchToProps = dispatch => {
     getAllBuckets: () => dispatch(bucketsFetchData()),
     createTask: data => dispatch(createTaskAction(data)),
     updateTask: (id, data) => dispatch(updateTaskStatus(id, data)),
+    deleteTask: id => dispatch(deleteTaskAction(id)),
   };
 };
 

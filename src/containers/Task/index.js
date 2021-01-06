@@ -54,7 +54,7 @@ const Task = props => {
       setBucket(tmpBucket);
     }
     setShowAddTask(true);
-  }, [getAllBuckets, allBuckets, params]);
+  }, [ getAllBuckets, allBuckets, params ]);
 
   const showEditTaskDialog = () => {
     setTaskActionType('edit');

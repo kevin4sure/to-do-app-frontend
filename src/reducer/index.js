@@ -3,7 +3,7 @@ import { combineReducers } from 'redux';
 
 import setSelectedThemeReducer from '../components/ThemeSection/reducer';
 import { buckets,bucketsHasErrored,bucketsIsLoading, bucketDetail, createBucketReducer } from '../containers/Bucket/reducers';
-import { tasksUnderBucketReducer, createTaskReducer } from '../containers/Task/reducers';
+import { tasksUnderBucketReducer, createTaskReducer, updateTaskReducer } from '../containers/Task/reducers';
 
 const rootReducer = combineReducers({
   selectedTheme: setSelectedThemeReducer,
@@ -13,7 +13,8 @@ const rootReducer = combineReducers({
   selectedBucket: bucketDetail,
   tasksUnderBucket: tasksUnderBucketReducer,
   createBucketReducer,
-  createTaskReducer
+  createTaskReducer,
+  updateTaskReducer,
 });
  
 export default rootReducer;

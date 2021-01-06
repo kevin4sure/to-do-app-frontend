@@ -13,14 +13,14 @@ import { connect } from 'react-redux';
 import { compose } from 'redux';
 
 import { bucketDetailFetchData, bucketsFetchData } from "../Bucket/actions";
-import { tasksUnderBucketFetchData, createTaskAction } from './actions';
+import { tasksUnderBucketFetchData, createTaskAction, updateTaskStatus } from './actions';
 import { MessageContext } from '../../context/MessageContext';
 import { Prompt } from '../../components/MessagePrompt';
 import StyledCard from '../../components/Card';
 import useStyles from './style';
 
 const Task = props => {
-  const { theme, match, selectedBucket, getBucketDetail, tasksUnderBucket, getTasksUnderBucket, allBuckets, getAllBuckets, createTask } = props;
+  const { theme, match, selectedBucket, getBucketDetail, tasksUnderBucket, getTasksUnderBucket, allBuckets, getAllBuckets, createTask, updateTask } = props;
   const [ taskList, setTaskList ] = useState([]);
   const [ showAddTask, setShowAddTask ] = useState(false);
   const [ newTaskName, setNewTaskName ] = useState('');
@@ -56,22 +56,35 @@ const Task = props => {
     setNewTaskName(value);
   };
 
-  const handleTaskStatusChange = e => {
+  const handleTaskStatusChange = useCallback(e => {
     const taskId = parseInt(e.currentTarget.name.substring(5), 10);
-    const tmp = taskList.map(each => {
-      if (each.id === taskId) {
-        return { ...each, is_done: e.currentTarget.checked }; 
-      }
-      return each;
-    });
-    setTaskList(tmp);
-  };
+    const value = e.currentTarget.checked;
+    updateTask(taskId, { is_done: value || false })
+      .then(response => {
+        showAlert('success', response.msg);
+      })
+      .then(() => {
+        const tmp = taskList.map(each => {
+          if (each.id === taskId) {
+            return { ...each, is_done: value || false }; 
+          }
+          return each;
+        });
+        setTaskList(tmp);
+      })
+      .catch(error => {
+        Object.values(error.response.data.error).forEach(each => {
+          showAlert('error', each.join(' '));
+        });        
+      });
+  },[ taskList, updateTask, showAlert ]);
 
   const handleNewTaskSubmit = useCallback(() => {
     createTask({ bucket_id: bucket.id, title: newTaskName })
       .then(res => {
         showAlert('success', res.msg);
         hideTaskDialog();
+        getTasksUnderBucket(params.bucketId);
       })
       .catch(error => {
         Object.values(error.response.data.error).forEach(each => {
@@ -79,7 +92,7 @@ const Task = props => {
         });        
       });
 
-  }, [ createTask, bucket, newTaskName, showAlert ]);
+  }, [ createTask, bucket, newTaskName, showAlert, getTasksUnderBucket, params ]);
 
   useEffect(() => {
     getBucketDetail(params.bucketId);
@@ -212,6 +225,7 @@ Task.propTypes = {
   allBuckets: PropTypes.arrayOf(PropTypes.object),
   getAllBuckets: PropTypes.func,
   createTask: PropTypes.func,
+  updateTask: PropTypes.func,
 };
 
 Task.defaultProps = {
@@ -221,7 +235,8 @@ Task.defaultProps = {
   getTasksUnderBucket: () => null,
   allBuckets: [],
   getAllBuckets: () => null,
-  createTask: () => null
+  createTask: () => null,
+  updateTask: () => null,
 };
 
 const mapStateToProps = state => {
@@ -237,7 +252,8 @@ const mapDispatchToProps = dispatch => {
     getBucketDetail: id => dispatch(bucketDetailFetchData(id)),
     getTasksUnderBucket: id => dispatch(tasksUnderBucketFetchData(id)),
     getAllBuckets: () => dispatch(bucketsFetchData()),
-    createTask: data => dispatch(createTaskAction(data))
+    createTask: data => dispatch(createTaskAction(data)),
+    updateTask: (id, data) => dispatch(updateTaskStatus(id, data)),
   };
 };
 

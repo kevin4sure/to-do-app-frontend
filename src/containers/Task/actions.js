@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { TASKS_ERROR,TASKS_LOADING,TASKS_SUCCESS, CREATE_TASKS_ERROR,CREATE_TASKS_LOADING,CREATE_TASKS_SUCCESS } from "./types";
+import { TASKS_ERROR,TASKS_LOADING,TASKS_SUCCESS, CREATE_TASKS_ERROR,CREATE_TASKS_LOADING,CREATE_TASKS_SUCCESS, UPDATE_TASK_ERROR,UPDATE_TASK_LOADING,UPDATE_TASK_SUCCESS } from "./types";
 
 const tasksError = err => {
   return {
@@ -40,6 +40,27 @@ const createTasksLoading = bool => {
 const createTasksSuccess = items => {
   return {
     type: CREATE_TASKS_SUCCESS,
+    items
+  };
+};
+
+const updateTasksError = err => {
+  return {
+    type: UPDATE_TASK_ERROR,
+    hasErrored: err
+  };
+};
+    
+const updateTasksLoading = bool => {
+  return {
+    type: UPDATE_TASK_LOADING,
+    isLoading: bool
+  };
+};
+    
+const updateTasksSuccess = items => {
+  return {
+    type: UPDATE_TASK_SUCCESS,
     items
   };
 };
@@ -99,4 +120,29 @@ export const createTaskAction = data => {
     return promise;  
   };
 };
-  
+
+export const updateTaskStatus = (id, data) => {
+  return dispatch => {
+    const promise = new Promise((resolve, reject) => axios.put(`http://localhost:8000/task/${id}`, { ...data })
+      .then(response => {
+        dispatch(updateTasksLoading(false));
+        return response;
+      })
+      .then(response => response.data)
+      .then(items => {
+        dispatch(updateTasksSuccess(items));
+        resolve(items); 
+      })
+      .catch(e => {
+        if (e.response.status === 406) {
+          dispatch(updateTasksError(e.response.data));
+        } else if (e?.response?.data?.msg) {
+          dispatch(updateTasksError(e.response.data.msg));
+        } else {
+          dispatch(updateTasksError(true));
+        }
+        reject(e);
+      }));
+    return promise;
+  };
+};

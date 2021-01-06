@@ -84,12 +84,6 @@ const Bucket = props => {
                   style={{ width: 200 }}
                   renderInput={txtProps => <TextField style={{ color: 'white' }} {...txtProps} value={newBucketName} name="bucket_name" label="Bucket Name" variant="outlined" />}
                 />
-                // <TextInput 
-                //   name="bucket_name"
-                //   label="Bucket Name"
-                //   value={newBucketName}
-                //   onChange={handleBucketNameChange}
-                // />
               } 
               buttons={[ 
                 { label: 'Cancel', action: hideBucketDialog, type: "secondary" }, 
